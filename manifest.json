@@ -1,0 +1,12 @@
+{
+    "background": {
+        "scripts": ["background.js"]
+    },
+    "description": "Add support to the omnibox to search and jump to a tab.",
+    "name": "tgrep",
+    "omnibox": { "keyword" : "tab" },
+    "permissions": [ "tabs" ],
+    "version": "0.1",
+
+    "manifest_version": 2
+}
