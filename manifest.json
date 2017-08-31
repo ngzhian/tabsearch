@@ -2,6 +2,10 @@
     "background": {
         "scripts": ["background.js"]
     },
+    "browser_action": {
+        "default_title": "tgrep",
+        "default_popup": "popup.html"
+    },
     "description": "Add support to the omnibox to search and jump to a tab.",
     "name": "tgrep",
     "omnibox": { "keyword" : "tab" },
