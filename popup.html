@@ -4,10 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title></title>
+    <style type="text/css" media="screen">
+    body {
+      /* set to absurd number, but browser will limit */
+      width: 9999px;
+    }
+    </style>
   </head>
   <body>
     <!-- search box -->
-    <input id="search" placeholder="search for tabs">
+    <input type="text" autocomplete="off" id="search" placeholder="search for tabs">
     <!-- tab listing -->
     <div id="listing">
     </div>
