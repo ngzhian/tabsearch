@@ -11,9 +11,14 @@
         "default_title": "TabSearch",
         "default_popup": "popup.html"
     },
-    "description": "Add support to the omnibox to search and jump to a tab.",
+    "description": "Search through your tabs, across all windows, and jump to them easily. Usable via a browser action or the omnibox.",
+    "icons": {
+        "16": "assets/ts16.png",
+        "24": "assets/ts24.png",
+        "128": "assets/ts128.png"
+    },
     "name": "TabSearch",
-    "omnibox": { "keyword" : "tab" },
+    "omnibox": { "keyword" : "ts" },
     "permissions": [ "tabs" ],
     "version": "0.1",
 
