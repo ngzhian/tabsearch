@@ -89,6 +89,19 @@ chrome.tabs.query({}, function(tabs) {
   render(listing, _index, 0);
 });
 
+function nextSelection() {
+  if (matches.length > 0) {
+    selectedIndex = (selectedIndex + 1) % matches.length;
+  }
+}
+
+function prevSelection() {
+  if (matches.length > 0) {
+    selectedIndex = selectedIndex - 1
+    selectedIndex = selectedIndex < 0 ? matches.length - 1 : selectedIndex
+  }
+}
+
 const onKeydown = (event) => {
   switch (event.key) {
     case 'Enter':
@@ -99,24 +112,27 @@ const onKeydown = (event) => {
       }
       // otherwise no result available...
       break;
+    case 'ArrowDown':
+      event.preventDefault()
+      nextSelection()
+      render(listing, matches, selectedIndex)
+      break;
     case 'n':
       if (event.ctrlKey) {
-        event.preventDefault();
-        // next
-        if (matches.length > 0) {
-          selectedIndex = (selectedIndex + 1) % matches.length;
-        }
+        event.preventDefault()
+        nextSelection()
         render(listing, matches, selectedIndex)
       }
+      break;
+    case 'ArrowUp':
+      event.preventDefault()
+      prevSelection()
+      render(listing, matches, selectedIndex)
       break;
     case 'p':
       if (event.ctrlKey) {
         event.preventDefault();
-        // prev
-        if (matches.length > 0) {
-          selectedIndex = selectedIndex - 1
-          selectedIndex = selectedIndex < 0 ? matches.length - 1 : selectedIndex
-        }
+        prevSelection()
         render(listing, matches, selectedIndex)
       }
       break;
