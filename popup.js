@@ -33,6 +33,7 @@ function nodeForTab(tab) {
   let div = document.createElement('div');
   div.textContent = tab.title;
   div.id = tab.id;
+  div.classList.add('listing-item');
   return div
 }
 
@@ -49,7 +50,10 @@ function render(root, matches, selectedIndex) {
   removeAllChildren(root);
   if (matches.length === 0) {
     // no matches, maybe show something?
-    root.textContent = "No results";
+    const div = document.createElement('div');
+    div.textContent = "No results";
+    div.classList.add('listing-item');
+    root.appendChild(div);
     return
   }
   const renderAndAdd = tab => {
@@ -58,7 +62,7 @@ function render(root, matches, selectedIndex) {
   }
   matches.forEach(renderAndAdd);
   const highlight = node => {
-    node.style.border = "1px solid blue"
+    node.classList.add('selected')
   }
   if (selectedIndex >= 0 && selectedIndex < root.childElementCount) {
     highlight(root.children[selectedIndex])
