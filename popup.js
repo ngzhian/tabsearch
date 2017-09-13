@@ -1,4 +1,5 @@
-// This event is fired with the user accepts the input in the omnibox.
+// TODO use https://developer.chrome.com/extensions/storage
+
 function moveToTab(tabId) {
   console.debug(`navigating to ${tabId}`);
   const updateInfo = {
@@ -9,6 +10,7 @@ function moveToTab(tabId) {
   };
   chrome.tabs.update(parseInt(tabId, 10), updateProperties, function(tab) {
     chrome.windows.update(tab.windowId, updateInfo, function(window) {
+      window.close();
       console.debug(`Brought window ${window.id} tab ${tab.id} to front`);
     })
   })
@@ -29,10 +31,31 @@ function makeSuggestion(tab, text) {
   };
 }
 
-function nodeForTab(tab) {
-  let div = document.createElement('div');
-  div.textContent = tab.title;
+function renderListingItem(tab, i) {
+  const div = document.createElement('div');
   div.id = tab.id;
+  div.classList.add('listing-item');
+
+  const img = document.createElement('img');
+  img.classList.add('favicon')
+  if (tab.favIconUrl) {
+    img.src = tab.favIconUrl;
+  }
+  div.appendChild(img);
+
+  const title = document.createElement('span');
+  title.textContent = tab.title;
+  div.appendChild(title);
+
+  if (i == selectedIndex) {
+    div.classList.add('selected')
+  }
+  return div
+}
+
+function renderEmptyListing() {
+  const div = document.createElement('div');
+  div.textContent = "No results";
   div.classList.add('listing-item');
   return div
 }
@@ -45,28 +68,15 @@ function removeAllChildren(node) {
 
 /* Render the popup onto a root node based on matches and selected index */
 function render(root, matches, selectedIndex) {
-  // clear root
-  // then add the matches
   removeAllChildren(root);
+
   if (matches.length === 0) {
-    // no matches, maybe show something?
-    const div = document.createElement('div');
-    div.textContent = "No results";
-    div.classList.add('listing-item');
-    root.appendChild(div);
+    root.appendChild(renderEmptyListing());
     return
   }
-  const renderAndAdd = tab => {
-    const div = nodeForTab(tab);
-    root.appendChild(div);
-  }
-  matches.forEach(renderAndAdd);
-  const highlight = node => {
-    node.classList.add('selected')
-  }
-  if (selectedIndex >= 0 && selectedIndex < root.childElementCount) {
-    highlight(root.children[selectedIndex])
-  }
+
+  const children = matches.map(renderListingItem);
+  children.forEach(child => root.appendChild(child));
 }
 
 const onInput = event => {
