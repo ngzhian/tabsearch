@@ -14,6 +14,11 @@
       padding: 1em;
       width: 100%;
     }
+    #listing {
+      list-style: none;
+      margin-top: 0;
+      padding-left: 0;
+    }
     .listing-item {
       padding: 1em;
     }
@@ -30,10 +35,10 @@
   </head>
   <body>
     <!-- search box -->
-    <input type="text" autocomplete="off" id="search" placeholder="search for tabs" type="search" autofocus>
+    <input type="text" autocomplete="off" id="search" placeholder="search for tabs" autofocus>
     <!-- tab listing -->
-    <div id="listing">
-    </div>
+    <ul id="listing">
+    </ul>
     <script src="popup.js" type="text/javascript" charset="utf-8"></script>
   </body>
 </html>

@@ -31,33 +31,49 @@ function makeSuggestion(tab, text) {
   };
 }
 
+/*******************************************************************************
+ * Rendering
+ ******************************************************************************/
 function renderListingItem(tab, i) {
-  const div = document.createElement('div');
-  div.id = tab.id;
-  div.classList.add('listing-item');
+  // a listing item container
+  const item = document.createElement('li');
+  item.id = tab.id;
+  item.classList.add('listing-item');
 
+  // fav icon image
   const img = document.createElement('img');
   img.classList.add('favicon')
   if (tab.favIconUrl) {
     img.src = tab.favIconUrl;
   }
-  div.appendChild(img);
+  item.appendChild(img);
 
+  // tab title
   const title = document.createElement('span');
   title.textContent = tab.title;
-  div.appendChild(title);
+  item.appendChild(title);
+
+  // separator
+  const separator = document.createElement('span');
+  separator.textContent = " - ";
+  item.appendChild(separator);
+
+  // tab url
+  const url = document.createElement('span');
+  url.textContent = tab.url;
+  item.appendChild(url);
 
   if (i == selectedIndex) {
-    div.classList.add('selected')
+    item.classList.add('selected')
   }
-  return div
+  return item
 }
 
 function renderEmptyListing() {
-  const div = document.createElement('div');
-  div.textContent = "No results";
-  div.classList.add('listing-item');
-  return div
+  const empty = document.createElement('div');
+  empty.textContent = "No results";
+  empty.classList.add('listing-item');
+  return empty
 }
 
 function removeAllChildren(node) {
