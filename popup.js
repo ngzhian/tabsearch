@@ -1,5 +1,8 @@
 // TODO use https://developer.chrome.com/extensions/storage
 
+/*******************************************************************************
+ * Tab manipulation
+ ******************************************************************************/
 function moveToTab(tabId) {
   console.debug(`navigating to ${tabId}`);
   const updateInfo = {
@@ -63,7 +66,7 @@ function renderListingItem(tab, i) {
   url.textContent = tab.url;
   item.appendChild(url);
 
-  if (i == selectedIndex) {
+  if (i == SELECTED_INDEX) {
     item.classList.add('selected')
   }
   return item
@@ -98,37 +101,37 @@ function render(root, matches, selectedIndex) {
 const onInput = event => {
   let searchText = event.target.value
   let isGood = goodSuggestion.bind(null, searchText)
-  matches = _index.filter(isGood)
+  MATCHES = INDEX.filter(isGood)
   // the selected index might change, so let's update it
-  if (selectedIndex >= matches.length) {
-    selectedIndex = Math.max(matches.length - 1, 0)
+  if (SELECTED_INDEX >= MATCHES.length) {
+    SELECTED_INDEX = Math.max(MATCHES.length - 1, 0)
   }
-  render(listing, matches, selectedIndex);
+  render(LISTING, MATCHES, SELECTED_INDEX);
 }
 
-var _index = [];
-var matches = [];
-var selectedIndex = 0;
-let listing = document.getElementById('listing');
+var INDEX = [];
+var MATCHES = [];
+var SELECTED_INDEX = 0;
+let LISTING = document.getElementById('listing');
 
 // TODO wrap in document.onload
 chrome.tabs.query({}, function(tabs) {
-  _index = tabs
-  matches = tabs
-  console.debug(`Built an index of ${_index.length} items.`)
-  render(listing, _index, 0);
+  INDEX = tabs
+  MATCHES = tabs
+  console.debug(`Built an index of ${INDEX.length} items.`)
+  render(LISTING, INDEX, 0);
 });
 
 function nextSelection() {
-  if (matches.length > 0) {
-    selectedIndex = (selectedIndex + 1) % matches.length;
+  if (MATCHES.length > 0) {
+    SELECTED_INDEX = (SELECTED_INDEX + 1) % MATCHES.length;
   }
 }
 
 function prevSelection() {
-  if (matches.length > 0) {
-    selectedIndex = selectedIndex - 1
-    selectedIndex = selectedIndex < 0 ? matches.length - 1 : selectedIndex
+  if (MATCHES.length > 0) {
+    SELECTED_INDEX = SELECTED_INDEX - 1
+    SELECTED_INDEX = SELECTED_INDEX < 0 ? MATCHES.length - 1 : SELECTED_INDEX
   }
 }
 
@@ -136,7 +139,7 @@ const onKeydown = (event) => {
   switch (event.key) {
     case 'Enter':
       // should go to first search result
-      let item = matches[selectedIndex];
+      let item = MATCHES[SELECTED_INDEX];
       if (item) {
         moveToTab(item.id);
       }
@@ -145,25 +148,25 @@ const onKeydown = (event) => {
     case 'ArrowDown':
       event.preventDefault()
       nextSelection()
-      render(listing, matches, selectedIndex)
+      render(LISTING, MATCHES, SELECTED_INDEX)
       break;
     case 'n':
       if (event.ctrlKey) {
         event.preventDefault()
         nextSelection()
-        render(listing, matches, selectedIndex)
+        render(LISTING, MATCHES, SELECTED_INDEX)
       }
       break;
     case 'ArrowUp':
       event.preventDefault()
       prevSelection()
-      render(listing, matches, selectedIndex)
+      render(LISTING, MATCHES, SELECTED_INDEX)
       break;
     case 'p':
       if (event.ctrlKey) {
         event.preventDefault();
         prevSelection()
-        render(listing, matches, selectedIndex)
+        render(LISTING, MATCHES, SELECTED_INDEX)
       }
       break;
   }
