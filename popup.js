@@ -33,32 +33,56 @@ function matchCompletely(re, str) {
   var myArray;
   const indices = [];
   while ((myArray = re.exec(str)) !== null && n < MAX_EXEC) {
-    indices.push(myArray.index);
+    indices.push({
+      startIndex: myArray.index,
+      endIndex: myArray.index + myArray[0].length,
+    });
     n++;
   }
   return indices;
 }
 
-// Returns a match
-// TODO this is called for every tab, we should probably only do this every search
-function goodSuggestion(text, tab) {
-  if (text.length === 0) {
+// Create a new Matcher with user input
+// and use it to match on tab titles and urls
+// Matcher will clean up user input to try and
+// eliminate pathological cases when we try to run
+// it with the regexp engine.
+function Matcher(dirtyText) {
+  const replacements = [
+    ["\\", "\\\\"],
+    ["[", "\\["],
+    ["]", "\\]"],
+    ["+", "\\+"],
+    ["*", "\\*"],
+    [".", "\\."],
+    ["|", "\\|"],
+  ]
+  const cleanText = clean(dirtyText);
+  const cleanRe = new RegExp(cleanText, 'gi');
+
+  function clean(dirtyText) {
+    var text = dirtyText;
+    replacements.forEach(r => { text = text.replace(r[0], r[1]); });
+    return text;
+  }
+
+  // Augment the tab object with match details
+  function match(tab) {
+    if (cleanText.length === 0) {
+      return {
+        titleMatches: [],
+        urlMatches: [],
+      }
+    }
     return {
-      titleMatches: [],
-      urlMatches: [],
+      ...tab,
+      titleMatches: matchCompletely(cleanRe, tab.title),
+      urlMatches: matchCompletely(cleanRe, tab.url),
     }
   }
-  // do a search
-  var re = new RegExp(text, 'gi');
-  const titleMatches = matchCompletely(re, tab.title);
-  const urlMatches = matchCompletely(re, tab.url);
-  const n = text.length;
-  function toIndex(start) {
-    return { startIndex: start, endIndex: start + n };
-  }
+
   return {
-    titleMatches: titleMatches.map(toIndex),
-    urlMatches: urlMatches.map(toIndex),
+    match
   }
 }
 
@@ -146,9 +170,9 @@ function renderHelper(text, indices) {
     return go(xs, acc, nextMatch, end);
   }
 
-  function spanify(start, end, match) {
+  function spanify(start, end, isMatch) {
     const span = document.createElement('span');
-    if (match) {
+    if (isMatch) {
       span.classList.add('match');
     }
     span.textContent = text.substring(start, end);
@@ -179,14 +203,10 @@ function removeAllChildren(node) {
 
 const onInput = event => {
   let searchText = event.target.value
-  function makeGood(tab) {
-    const matches = goodSuggestion(searchText, tab);
-    tab = {
-      ...tab,
-      ...matches,
-    }
-    return tab
-  }
+
+  const matcher = new Matcher(searchText);
+  const makeGood = (tab) => matcher.match(tab);
+
   function isGood(tab) {
     // special case when there are search is empty
     if (searchText.length === 0) {
