@@ -96,19 +96,21 @@ function renderListingItem(tab, i) {
 
   // tab title
   const title = document.createElement('span');
+  title.classList.add('title');
   renderHelper(tab.title, tab.titleMatches).forEach(v => title.appendChild(v));
   item.appendChild(title);
 
 
   // separator
   const separator = document.createElement('span');
+  separator.classList.add('separator');
   separator.textContent = " - ";
   item.appendChild(separator);
 
   // tab url
   const url = document.createElement('span');
-  renderHelper(tab.url, tab.urlMatches).forEach(v => title.appendChild(v));
-  // url.textContent = tab.url;
+  url.classList.add('url');
+  renderHelper(tab.url, tab.urlMatches).forEach(v => url.appendChild(v));
   item.appendChild(url);
 
   if (i == SELECTED_INDEX) {
@@ -125,51 +127,36 @@ function renderHelper(text, indices) {
     return [span];
   }
 
-  // [ (10, 12); (15, 17) ]
-  // => [(0, 10); (12, 15); (17, n)]
-  function go(is, acc, start, end) {
-    if (is.length === 0) {
+  // from [(10, 15), (19, 21)]
+  // to [(0, 10, false), (10, 15, true), (15, 19, false),
+  //     (19, 21, true), (21, n, false)]
+  function go(list, acc, lastMatch, end) {
+    if (list.length === 0) {
+      acc.push([lastMatch, end, false])
       return acc;
     }
 
-    if (start < is[0].startIndex) {
-      acc.push([start, is[0].startIndex]);
+    const [x, ...xs] = list;
+    var nextMatch;
+    if (lastMatch < x.startIndex) {
+      acc.push([lastMatch, x.startIndex, false]);
     }
-
-    if (is.length === 1) {
-      acc.push([is[0].endIndex, end]);
-    }
-
-    start = is[0].endIndex;
-
-    return go(is.splice(1), acc, start, end)
-  }
-  const ranges = go(indices, [], 0, text.length)
-
-  const indicesSpan = indices.map(r => {
-    const span = document.createElement('span');
-    span.classList.add('match');
-    span.textContent = text.substring(r.startIndex, r.endIndex);
-    return span;
-  })
-
-  const rangesSpan = ranges.map(r => {
-    const span = document.createElement('span');
-    span.textContent = text.substring(r[0], r[1]);
-    return span;
-  })
-
-  function interleave(xs, ys) {
-    if (xs.length === 0) {
-      return ys;
-    }
-    if (ys.length === 0) {
-      return xs;
-    }
-    return [xs[0], ys[0]].concat(interleave(xs.splice(1), ys.splice(1)));
+    acc.push([x.startIndex, x.endIndex, true]);
+    nextMatch = x.endIndex;
+    return go(xs, acc, nextMatch, end);
   }
 
-  return interleave(rangesSpan, indicesSpan);
+  function spanify(start, end, match) {
+    const span = document.createElement('span');
+    if (match) {
+      span.classList.add('match');
+    }
+    span.textContent = text.substring(start, end);
+    return span;
+  }
+
+  var x = go(indices, [], 0, text.length);
+  return x.map(v => spanify(...v));
 }
 
 /* Render when there are no matches */
