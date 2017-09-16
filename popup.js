@@ -3,6 +3,7 @@
 /*******************************************************************************
  * Tab manipulation
  ******************************************************************************/
+
 function moveToTab(tabId) {
   console.debug(`navigating to ${tabId}`);
   const updateInfo = {
@@ -19,24 +20,66 @@ function moveToTab(tabId) {
   })
 }
 
-function goodSuggestion(text, tab) {
-  const re = new RegExp(text, 'i');
-  return tab.title.match(re) || tab.url.match(re);
+/*******************************************************************************
+ * Searching/Querying/Matching
+ ******************************************************************************/
+
+const MAX_EXEC = 10
+// Match a RegExp in str, returning an array of all indices
+// if re is empty, this will loop infinitely, so we cap it at an
+// abitrary number of matches
+function matchCompletely(re, str) {
+  var n = 0 // number of execs run
+  var myArray;
+  const indices = [];
+  while ((myArray = re.exec(str)) !== null && n < MAX_EXEC) {
+    indices.push(myArray.index);
+    n++;
+  }
+  return indices;
 }
 
-function makeSuggestion(tab, text) {
-  const re = new RegExp(text, 'i');
-  const title = tab.title.replace(re, `<match>$&</match>`);
-  const url = `<url>${tab.url.replace(re, `<match>$&</match>`)}</url>`;
+// Returns a match
+// TODO this is called for every tab, we should probably only do this every search
+function goodSuggestion(text, tab) {
+  if (text.length === 0) {
+    return {
+      titleMatches: [],
+      urlMatches: [],
+    }
+  }
+  // do a search
+  var re = new RegExp(text, 'gi');
+  const titleMatches = matchCompletely(re, tab.title);
+  const urlMatches = matchCompletely(re, tab.url);
+  const n = text.length;
+  function toIndex(start) {
+    return { startIndex: start, endIndex: start + n };
+  }
   return {
-    content: String(tab.id || -1),
-    description: `${title} | ${url}`,
-  };
+    titleMatches: titleMatches.map(toIndex),
+    urlMatches: urlMatches.map(toIndex),
+  }
 }
 
 /*******************************************************************************
  * Rendering
  ******************************************************************************/
+
+/* Render the popup onto a root node based on matches and selected index */
+function render(root, matches, selectedIndex) {
+  removeAllChildren(root);
+
+  if (matches.length === 0) {
+    root.appendChild(renderEmptyListing());
+    return
+  }
+
+  const children = matches.map(renderListingItem);
+  children.forEach(child => root.appendChild(child));
+}
+
+/* Render one listing item */
 function renderListingItem(tab, i) {
   // a listing item container
   const item = document.createElement('li');
@@ -53,8 +96,9 @@ function renderListingItem(tab, i) {
 
   // tab title
   const title = document.createElement('span');
-  title.textContent = tab.title;
+  renderHelper(tab.title, tab.titleMatches).forEach(v => title.appendChild(v));
   item.appendChild(title);
+
 
   // separator
   const separator = document.createElement('span');
@@ -63,7 +107,8 @@ function renderListingItem(tab, i) {
 
   // tab url
   const url = document.createElement('span');
-  url.textContent = tab.url;
+  renderHelper(tab.url, tab.urlMatches).forEach(v => title.appendChild(v));
+  // url.textContent = tab.url;
   item.appendChild(url);
 
   if (i == SELECTED_INDEX) {
@@ -72,6 +117,62 @@ function renderListingItem(tab, i) {
   return item
 }
 
+/* Render a node with text interspered with spans */
+function renderHelper(text, indices) {
+  if (!indices || indices.length === 0) {
+    const span = document.createElement('span');
+    span.textContent = text;
+    return [span];
+  }
+
+  // [ (10, 12); (15, 17) ]
+  // => [(0, 10); (12, 15); (17, n)]
+  function go(is, acc, start, end) {
+    if (is.length === 0) {
+      return acc;
+    }
+
+    if (start < is[0].startIndex) {
+      acc.push([start, is[0].startIndex]);
+    }
+
+    if (is.length === 1) {
+      acc.push([is[0].endIndex, end]);
+    }
+
+    start = is[0].endIndex;
+
+    return go(is.splice(1), acc, start, end)
+  }
+  const ranges = go(indices, [], 0, text.length)
+
+  const indicesSpan = indices.map(r => {
+    const span = document.createElement('span');
+    span.classList.add('match');
+    span.textContent = text.substring(r.startIndex, r.endIndex);
+    return span;
+  })
+
+  const rangesSpan = ranges.map(r => {
+    const span = document.createElement('span');
+    span.textContent = text.substring(r[0], r[1]);
+    return span;
+  })
+
+  function interleave(xs, ys) {
+    if (xs.length === 0) {
+      return ys;
+    }
+    if (ys.length === 0) {
+      return xs;
+    }
+    return [xs[0], ys[0]].concat(interleave(xs.splice(1), ys.splice(1)));
+  }
+
+  return interleave(rangesSpan, indicesSpan);
+}
+
+/* Render when there are no matches */
 function renderEmptyListing() {
   const empty = document.createElement('div');
   empty.textContent = "No results";
@@ -85,23 +186,29 @@ function removeAllChildren(node) {
   }
 }
 
-/* Render the popup onto a root node based on matches and selected index */
-function render(root, matches, selectedIndex) {
-  removeAllChildren(root);
-
-  if (matches.length === 0) {
-    root.appendChild(renderEmptyListing());
-    return
-  }
-
-  const children = matches.map(renderListingItem);
-  children.forEach(child => root.appendChild(child));
-}
+/*******************************************************************************
+ * User input/evengts
+ ******************************************************************************/
 
 const onInput = event => {
   let searchText = event.target.value
-  let isGood = goodSuggestion.bind(null, searchText)
-  MATCHES = INDEX.filter(isGood)
+  function makeGood(tab) {
+    const matches = goodSuggestion(searchText, tab);
+    tab = {
+      ...tab,
+      ...matches,
+    }
+    return tab
+  }
+  function isGood(tab) {
+    // special case when there are search is empty
+    if (searchText.length === 0) {
+      return true;
+    }
+    return tab.titleMatches.length != 0 || tab.urlMatches.length != 0
+  }
+  MATCHES = INDEX.map(makeGood).filter(isGood)
+
   // the selected index might change, so let's update it
   if (SELECTED_INDEX >= MATCHES.length) {
     SELECTED_INDEX = Math.max(MATCHES.length - 1, 0)
